@@ -11,86 +11,108 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 // Path to the JSON file
-const poetsFile = path.join(__dirname, 'poet.json');
+const poetsFile = path.join(__dirname, 'history.json');
 
-// Serve the form
+// Serve the main page with sidebar
 app.get('/', (req, res) => {
   res.send(`
     <html>
       <head>
-        <title>Poet Entry</title>
+        <title>Poet App</title>
         <style>
           body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f4f4f9;
-            color: #333;
             display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
           }
-          .container {
-            background: #fff;
-            padding: 20px 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 300px;
-            text-align: center;
+          .sidebar {
+            width: 200px;
+            background: #333;
+            color: white;
+            height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+          }
+          .sidebar a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            margin-bottom: 10px;
+          }
+          .sidebar a:hover {
+            text-decoration: underline;
+          }
+          .content {
+            flex: 1;
+            padding: 20px;
+            background: #f4f4f9;
+            box-sizing: border-box;
           }
           h1 {
             color: #444;
-            font-size: 24px;
-            margin-bottom: 20px;
           }
-          label {
+          form label {
             display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
+            margin-top: 10px;
           }
-          input[type="text"] {
+          form input[type="text"] {
             width: 100%;
             padding: 8px;
+            margin-top: 5px;
             margin-bottom: 15px;
             border: 1px solid #ddd;
             border-radius: 5px;
           }
           button {
-            padding: 10px 20px;
+            padding: 10px 15px;
             background-color: #007BFF;
-            color: #fff;
+            color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 16px;
           }
           button:hover {
             background-color: #0056b3;
           }
-          .error {
-            color: #d9534f;
-            margin-bottom: 15px;
-            font-size: 14px;
-          }
-          a {
-            text-decoration: none;
-            color: #007BFF;
-          }
-          a:hover {
-            text-decoration: underline;
-          }
         </style>
       </head>
       <body>
-        <div class="container">
-          <h1>Create a Poet Entry</h1>
+        <div class="sidebar">
+          <h2>Menu</h2>
+          <a href="/post-poet">Post Poet</a>
+          <a href="/random-poet-page">Random Poet</a>
+        </div>
+        <div class="content">
+          <h1>Welcome to Poet App</h1>
+          <p>Select an option from the sidebar.</p>
+        </div>
+      </body>
+    </html>
+  `);
+});
+
+// Serve the "Post Poet" page
+app.get('/post-poet', (req, res) => {
+  res.send(`
+    <html>
+      <head>
+        <title>Post Poet</title>
+      </head>
+      <body>
+        <div class="sidebar">
+          <h2>Menu</h2>
+          <a href="/post-poet">Post Poet</a>
+          <a href="/random-poet-page">Random Poet</a>
+        </div>
+        <div class="content">
+          <h1>Post Poet</h1>
           <form method="POST" action="/save">
-            <label for="author">Author</label>
-            <input type="text" id="author" name="author" placeholder="Enter the author's name" />
-            <label for="text">Text</label>
-            <input type="text" id="text" name="text" placeholder="Enter the text" />
-            <button type="submit">Save</button>
+            <label for="author">Author:</label>
+            <input type="text" id="author" name="author" />
+            <label for="text">Text:</label>
+            <input type="text" id="text" name="text" />
+            <button type="submit">Save Poet</button>
           </form>
         </div>
       </body>
@@ -98,121 +120,84 @@ app.get('/', (req, res) => {
   `);
 });
 
-// Save poet data
-app.post('/save', (req, res) => {
-  const { author, text } = req.body;
+// Serve the "Random Poet" page
+app.get('/random-poet-page', (req, res) => {
+  fs.readFile(poetsFile, 'utf8', (err, data) => {
+    if (err) {
+      return res.status(500).send('Error reading the poets.');
+    }
 
-  // Validation
-  if (!author || !text) {
-    let errorMessage = '';
-    if (!author) errorMessage += 'Author is empty. ';
-    if (!text) errorMessage += 'Text is empty. ';
-    return res.status(400).send(`
+    const poets = data ? JSON.parse(data) : [];
+    if (poets.length === 0) {
+      return res.send(`
+        <html>
+          <head>
+            <title>Random Poet</title>
+          </head>
+          <body>
+            <div class="sidebar">
+              <h2>Menu</h2>
+              <a href="/post-poet">Post Poet</a>
+              <a href="/random-poet-page">Random Poet</a>
+            </div>
+            <div class="content">
+              <h1>Random Poet</h1>
+              <p>No poets found.</p>
+            </div>
+          </body>
+        </html>
+      `);
+    }
+
+    const randomPoet = poets[Math.floor(Math.random() * poets.length)];
+    res.send(`
       <html>
         <head>
-          <title>Error</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              background-color: #f4f4f9;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              height: 100vh;
-            }
-            .container {
-              text-align: center;
-              background: #fff;
-              padding: 20px;
-              border-radius: 10px;
-              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-              width: 300px;
-            }
-            h3 {
-              color: #d9534f;
-            }
-            a {
-              text-decoration: none;
-              color: #007BFF;
-            }
-            a:hover {
-              text-decoration: underline;
-            }
-          </style>
+          <title>Random Poet</title>
         </head>
         <body>
-          <div class="container">
-            <h3>Error: ${errorMessage}</h3>
-            <a href="/">Go Back</a>
+          <div class="sidebar">
+            <h2>Menu</h2>
+            <a href="/post-poet">Post Poet</a>
+            <a href="/random-poet-page">Random Poet</a>
+          </div>
+          <div class="content">
+            <h1>Random Poet</h1>
+            <p><strong>Author:</strong> ${randomPoet.author}</p>
+            <p><strong>Text:</strong> ${randomPoet.text}</p>
           </div>
         </body>
       </html>
     `);
+  });
+});
+
+// Save poet data
+app.post('/save', (req, res) => {
+  const { author, text } = req.body;
+
+  if (!author || !text) {
+    return res.status(400).send('Author and text are required.');
   }
 
-  // Read the existing poets
   fs.readFile(poetsFile, 'utf8', (err, data) => {
     if (err) {
       return res.status(500).send('Error reading the file.');
     }
 
     const poets = data ? JSON.parse(data) : [];
-    const newPoet = { author, text };
+    poets.push({ author, text });
 
-    // Add new poet
-    poets.push(newPoet);
-
-    // Save to the file
     fs.writeFile(poetsFile, JSON.stringify(poets, null, 2), (err) => {
       if (err) {
         return res.status(500).send('Error saving the poet.');
       }
-      res.send(`
-        <html>
-          <head>
-            <title>Success</title>
-            <style>
-              body {
-                font-family: Arial, sans-serif;
-                background-color: #f4f4f9;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-              }
-              .container {
-                text-align: center;
-                background: #fff;
-                padding: 20px;
-                border-radius: 10px;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                width: 300px;
-              }
-              h3 {
-                color: #5cb85c;
-              }
-              a {
-                text-decoration: none;
-                color: #007BFF;
-              }
-              a:hover {
-                text-decoration: underline;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <h3>Poet saved successfully!</h3>
-              <a href="/">Create Another</a>
-            </div>
-          </body>
-        </html>
-      `);
+      res.redirect('/');
     });
   });
 });
 
 // Start the server
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`Server is running at http://localhost:${PORT}`);
 });
